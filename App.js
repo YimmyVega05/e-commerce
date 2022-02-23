@@ -1,21 +1,58 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React  { useState , useEffect, useMemo } from "react";
+import { Text } from "react-native";
+import {  Provider as PaperProvider } from "react-native-paper";
+import jwtDecode  from "jwt-decode";
+import AuthScreen from "./src/screens/Auth"; /*Importo el Auth */ 
+import AuthContext from "./src/context/AuthContex";
+import { setTokenApi, getTokenApi } from "./src/api/token";
+
+
+
 
 export default function App() {
+  /* creo una constante de useState para ver si el usuario esta logeado*/
+  const [auth, setAuth] = useState(undefined); 
+
+  useEffect(() => {
+    (async () => {
+      const token = await getTokenApi();
+      if (token) {
+        setAuth({
+          token,
+          idUser: jwtDecode(token).id,
+        });
+      } else {
+        setAuth(null);
+      }
+    })();
+  }, []);
+
+  function login(user) {
+  setTokenApi(user.jwt);
+  setAuth({
+    token: user.jwt,
+    idUser: user.user._id,
+  });
+};
+
+  const authData = useMemo(
+    () =>({
+      auth,
+      login,
+      logout: () => null,
+    }),
+    [auth] 
+  );
+
+  if ( auth === undefined) return null;
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <AuthContext.Provider value={authData}>
+     <PaperProvider>
+      {auth ? <Text>Zona de Usuarios</Text> : <AuthScreen/>}
+     </PaperProvider>
+    </AuthContext.Provider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+
